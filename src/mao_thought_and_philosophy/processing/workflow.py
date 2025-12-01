@@ -1,16 +1,13 @@
-import os
 import re
-from pathlib import Path
 
-# 导入配置和核心模块
+from .prompt_templates import get_user_prompt, get_system_prompt
 from ..config import ASSETS_DIR, OUTPUT_DIR
-from ..core.loader import read_epub_chapters_custom  # 确保 loader.py 里函数名一致
 from ..core.graph_builder import ConceptMemory
 from ..core.llm_client import call_llm_json
-from .prompt_templates import ANALYSIS_SYSTEM_PROMPT, get_user_prompt
+from ..core.loader import read_epub_chapters_custom  #
 
 # 定义输出路径
-KB_DIR = OUTPUT_DIR / "knowledge_base"
+KB_DIR = OUTPUT_DIR / "knowledge_base_back"
 CHAPTERS_DIR = KB_DIR / "chapters"
 
 
@@ -52,7 +49,12 @@ def run_analysis():
         print(f"❌ 错误：在 {ASSETS_DIR} 下找不到电子书文件！")
         return
 
-    print("📖 正在解析电子书章节...")
+    book_title = epub_path.stem
+    print(f"📖 正在解析《{book_title}》...")
+
+    # 动态生成 System Prompt
+    current_system_prompt = get_system_prompt(book_title)
+
     # 这里调用的是我们之前修改过的、能提取 title 的 loader
     chapters = read_epub_chapters_custom(epub_path)
     memory = ConceptMemory()
@@ -81,7 +83,7 @@ def run_analysis():
 
         try:
             # 调用大模型获取 JSON
-            result = call_llm_json(ANALYSIS_SYSTEM_PROMPT, prompt)
+            result = call_llm_json(current_system_prompt, prompt)
         except Exception as e:
             print(f"   ⚠️ 分析失败，跳过本章: {str(e)}")
             continue

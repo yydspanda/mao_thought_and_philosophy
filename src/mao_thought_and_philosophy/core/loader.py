@@ -1,7 +1,8 @@
-import ebooklib
-from ebooklib import epub
-from bs4 import BeautifulSoup
 import warnings
+
+import ebooklib
+from bs4 import BeautifulSoup
+from ebooklib import epub
 
 from mao_thought_and_philosophy.config import ASSETS_DIR
 

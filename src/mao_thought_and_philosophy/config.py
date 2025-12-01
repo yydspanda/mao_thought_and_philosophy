@@ -4,6 +4,7 @@ config: 项目目录配置与环境变量管理
 import os
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # 使用 importlib.resources (Python 3.9+)
@@ -46,12 +47,14 @@ LLM_API_KEY = os.getenv("LLM_API_KEY")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o")
 
+
 # --- 4. 辅助函数 ---
 
 def setup_directories():
     """确保输出目录存在"""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def validate_config():
     """

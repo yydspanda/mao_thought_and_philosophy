@@ -8,6 +8,9 @@
 > 
 > 一个基于 LLM (Large Language Model) 的自动化知识工程系统。它不仅仅是一个电子书阅读器，更是一个**“虚拟战略顾问”**。它能够像解剖麻雀一样深度研读经典著作，提取思维模型，构建知识图谱，并生成可交互的 **Obsidian** 数字花园。
 
+
+备注1：若想直接阅读解读结果，请参考 [📖 Obsidian 食用指南](#obsidian-guide)
+
 ---
 
 ## ✨ 核心亮点 (Key Features)
@@ -30,6 +33,8 @@
     *   **原文折叠**：保留原书排版，点击 `<details>` 即可展开对照阅读。
     *   **YAML 元数据**：包含 `tags`、`summary`、`order`，支持 Dataview 插件查询。
     *   **底部导航**：自动生成“上一章/下一章”跳转链接，且逻辑与文件名严格统一。
+
+
 
 ---
 
@@ -137,7 +142,7 @@ output/knowledge_base/
 
 ---
 
-## 📖 Obsidian 食用指南
+## 📖 Obsidian 食用指南 <a id="obsidian-guide"></a>
 
 为了获得最佳体验，请使用 **[Obsidian](https://obsidian.md/)** 打开 `output/knowledge_base` 文件夹。
 

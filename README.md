@@ -81,9 +81,9 @@ poetry install
 
 ```ini
 # .env 文件
-LLM_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-LLM_BASE_URL=https://api.deepseek.com  # 或 https://api.openai.com/v1
-LLM_MODEL=deepseek-chat                # 或 gpt-4o
+LLM_API_KEY=AI********************************
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/  
+LLM_MODEL=gemini-2.5-flash
 ```
 
 ### 4. 准备书籍

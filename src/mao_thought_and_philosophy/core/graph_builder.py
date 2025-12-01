@@ -1,30 +1,47 @@
 # src/mao_thought_and_philosophy/core/graph_builder.py
 import json
+import os
 from pathlib import Path
+
 
 class ConceptMemory:
     def __init__(self):
         # 存储概念及其定义：{"修正主义": "赫鲁晓夫提出的..."}
         self.concepts = {}
-        # 存储概念间的关系（预留功能）：[("赫鲁晓夫", "修正主义", "推动者")]
+        # 存储概念间的关系：[("赫鲁晓夫", "修正主义", "推动者")]
         self.relations = []
         # 记录每个概念出现的章节：{"修正主义": ["01_省委...", "03_防止..."]}
         self.appearances = {}
 
+    def load_from_file(self, file_path: Path):
+        """
+        从已有的 JSON 文件加载记忆
+        这是防止断点续传时数据丢失的关键。
+        """
+        if file_path.exists():
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    # 使用 .get 防止旧数据字段缺失导致报错
+                    self.concepts = data.get("concepts", {})
+                    self.relations = data.get("relations", [])
+                    self.appearances = data.get("appearances", {})
+                print(f"🧠 已加载现有知识图谱：包含 {len(self.concepts)} 个概念")
+            except Exception as e:
+                print(f"⚠️ 尝试加载旧图谱失败 (将从头开始构建): {e}")
+        else:
+            print("🆕 未找到现有图谱，将初始化空白记忆。")
+
     def update(self, new_concepts, chapter_title):
         """
         接收大模型提取的新概念，合并到全局记忆中
-
-        Args:
-            new_concepts (list): [{"name": "xxx", "definition": "xxx"}, ...]
-            chapter_title (str): 当前章节的标题
         """
-        # 1. 防御性检查：如果 LLM 没提取出概念，直接返回
+        # 1. 防御性检查
         if not new_concepts or not isinstance(new_concepts, list):
             return
 
         for concept in new_concepts:
-            # 使用 .get 安全获取，防止 KeyError
+            # 使用 .get 安全获取
             name = concept.get('name')
             definition = concept.get('definition')
 
@@ -33,13 +50,11 @@ class ConceptMemory:
                 continue
 
             # 2. 更新概念定义
-            # 策略：如果是一个全新的概念，记录它的定义。
-            # 如果是旧概念，我们暂时保留最早的定义，防止定义被不断追加导致 Prompt 过长。
-            # (当然，这里也可以改为覆盖更新，取决于你希望它记最新的还是最早的)
+            # 策略：保留最早的定义（通常是首次提出时的定义），避免定义不断变长。
             if name not in self.concepts:
                 self.concepts[name] = definition
 
-            # 3. 记录出处 (关键逻辑)
+            # 3. 记录出处
             if name not in self.appearances:
                 self.appearances[name] = []
 
@@ -50,15 +65,13 @@ class ConceptMemory:
     def get_context_string(self, limit=20):
         """
         提取高价值概念，打包成字符串发给 LLM。
-        策略：优先选择出现频率最高（最重要）的概念。
         """
         if not self.concepts:
             return "暂无已知概念。"
 
         summary = f"【已知核心概念库 (Top {limit})】:\n"
 
-        # 1. 排序：按“出现章节数”从多到少排序，找出最重要的概念
-        # x[0] 是概念名, x[1] 是章节列表
+        # 排序：按“出现章节数”从多到少排序，优先把高频概念发给 AI
         sorted_concepts = sorted(
             self.appearances.items(),
             key=lambda x: len(x[1]),
@@ -71,7 +84,7 @@ class ConceptMemory:
                 break
 
             definition = self.concepts.get(name, "暂无定义")
-            # 截断定义长度，节省 Token
+            # 简单截断，防止 Token 溢出
             clean_def = definition[:100] + "..." if len(definition) > 100 else definition
 
             summary += f"- {name}: {clean_def}\n"
@@ -81,11 +94,11 @@ class ConceptMemory:
 
     def save_memory(self, output_dir: Path):
         """
-        将知识图谱保存为 JSON 文件，供后续可视化或检索使用
+        将知识图谱保存为 JSON 文件
         """
         data = {
             "concepts": self.concepts,
-            "relations": self.relations, # 预留
+            "relations": self.relations,
             "appearances": self.appearances
         }
 

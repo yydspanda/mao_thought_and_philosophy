@@ -1,41 +1,67 @@
 import re
+from pathlib import Path
 
+# 保持原有的导入不变
 from .prompt_templates import get_user_prompt, get_system_prompt
 from ..config import ASSETS_DIR, OUTPUT_DIR
 from ..core.graph_builder import ConceptMemory
 from ..core.llm_client import call_llm_json
-from ..core.loader import read_epub_chapters_custom  #
+from ..core.loader import read_epub_chapters_custom
 
 # 定义输出路径
-KB_DIR = OUTPUT_DIR / "knowledge_base_back"
+KB_DIR = OUTPUT_DIR / "knowledge_base"
 CHAPTERS_DIR = KB_DIR / "chapters"
+CONCEPTS_DIR = KB_DIR / "concepts"  # 【新增】概念卡片目录
 
 
 def sanitize_filename(name):
-    """
-    【增强版】清洗文件名
-    1. 移除 html 后缀
-    2. 移除系统非法字符 (/:*?"<>|)
-    3. 移除中文/英文引号，防止文件名丑陋和链接破坏
-    """
-    # 移除后缀
+    """清洗文件名"""
     name = name.replace('.html', '').replace('.xhtml', '')
-
-    # 正则替换：移除 \ / * ? : " < > | 以及 “” ‘’ ' "
     name = re.sub(r'[\\/*?:"<>|“”‘’\'"]', "", name)
-
-    # 去除首尾空格并截断长度，防止文件名过长
     return name.strip()[:60]
 
 
 def get_safe_title_from_chap(chapter_data):
-    """
-    辅助函数：从章节数据中提取并清洗标题
-    用于生成当前文件、上一章链接、下一章链接，确保逻辑统一
-    """
-    # 优先取 extracted_title，如果没有则取 id
+    """辅助函数：从章节数据中提取并清洗标题"""
     raw = chapter_data.get('title', chapter_data['id'])
     return sanitize_filename(raw)
+
+
+def generate_concept_cards(memory):
+    """
+    将 JSON 数据转化为 Obsidian 可读的 Markdown 概念卡片
+    """
+    CONCEPTS_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"\n📇 正在生成 {len(memory.concepts)} 张概念卡片...")
+
+    for name, definition in memory.concepts.items():
+        # 清洗文件名
+        safe_name = sanitize_filename(name)
+        if not safe_name: continue
+
+        file_path = CONCEPTS_DIR / f"{safe_name}.md"
+
+        # 获取出处列表 (这里存储的是文件名，如 "01_省委...")
+        chapter_links = memory.appearances.get(name, [])
+        # 生成双向链接字符串
+        backlinks = ", ".join([f"[[{link}]]" for link in chapter_links])
+
+        content = f"""---
+tags: [核心概念]
+---
+
+# {name}
+
+### 📝 定义
+> {definition}
+
+### 📚 出现章节
+{backlinks}
+"""
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+    print(f"✅ 概念卡片已生成至: {CONCEPTS_DIR}")
 
 
 def run_analysis():
@@ -52,50 +78,75 @@ def run_analysis():
     book_title = epub_path.stem
     print(f"📖 正在解析《{book_title}》...")
 
-    # 动态生成 System Prompt
     current_system_prompt = get_system_prompt(book_title)
-
-    # 这里调用的是我们之前修改过的、能提取 title 的 loader
     chapters = read_epub_chapters_custom(epub_path)
+
+    # 【修改点 1】初始化并加载旧记忆
+    # 这样即使跳过前9章，前9章的概念依然在内存里，不会丢失
     memory = ConceptMemory()
+    json_path = KB_DIR / "knowledge_graph.json"
+    memory.load_from_file(json_path)
 
     print(f"📚 共识别出 {len(chapters)} 个章节，开始构建知识库...\n")
 
-    # 初始化总索引内容
     index_content = "# 全书目录与索引\n\n| 序号 | 章节 | 核心标签 | 一句话总结 |\n|---|---|---|---|\n"
 
     # 3. 逐章处理
     for i, chap in enumerate(chapters):
 
         # --- A. 准备文件名 ---
-        # 获取清洗后的标题
         curr_safe_title = get_safe_title_from_chap(chap)
-
-        # 生成带序号的文件名，如 "01_省委第一书记要抓理论工作.md"
         file_name = f"{i + 1:02d}_{curr_safe_title}.md"
         file_path = CHAPTERS_DIR / file_name
 
+        # 这是一个不带后缀的链接名，用于 Obsidian 链接和记忆库
+        link_name = f"{i + 1:02d}_{curr_safe_title}"
+
+        # =================================================================
+        # 断点续传：检查文件是否已存在
+        # =================================================================
+        if file_path.exists():
+            print(f"⏩ [已存在，跳过] {file_name}")
+
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    # 简单提取摘要和标签用于目录回填
+                    summary_match = re.search(r'> \*\*摘要\*\*：(.*?)\n', content)
+                    summary = summary_match.group(1).strip() if summary_match else "（摘要读取失败）"
+
+                    tags_match = re.search(r'tags: \[(.*?)\]', content)
+                    tags_str = tags_match.group(1) if tags_match else ""
+                    tags_clean = tags_str.replace("'", "").replace('"', "")
+                    tags_display = ", ".join([f"`{t.strip()}`" for t in tags_clean.split(',')][:3])
+
+                    link = f"[{curr_safe_title}](./chapters/{file_name})"
+                    index_content += f"| {i + 1} | {link} | {tags_display} | {summary} |\n"
+            except Exception as e:
+                print(f"   ⚠️ 读取旧文件元数据失败: {e}")
+
+            continue
+        # =================================================================
+
         print(f"⚡ [{i + 1}/{len(chapters)}] 正在深度研读：{curr_safe_title} ...")
 
-        # --- B. AI 分析 (RAG + 记忆) ---
+        # --- B. AI 分析 ---
         context_str = memory.get_context_string()
         prompt = get_user_prompt(chap['content'], context_str)
 
         try:
-            # 调用大模型获取 JSON
             result = call_llm_json(current_system_prompt, prompt)
         except Exception as e:
             print(f"   ⚠️ 分析失败，跳过本章: {str(e)}")
             continue
 
-        # --- C. 更新知识图谱记忆 (可选) ---
+        # --- C. 更新知识图谱记忆 ---
+        # 【修改点 2】传入 link_name (带序号的)，这样概念卡片里的链接就能点通了
         concepts = result.get('key_concepts', [])
-        memory.update(concepts, curr_safe_title)
-        # --- D. 组装 Markdown 内容 ---
+        memory.update(concepts, link_name)
 
-        # 1. Frontmatter (元数据)
+        # --- D. 组装 Markdown 内容 ---
         tags = result.get('tags', [])
-        # 处理摘要中的双引号，防止 YAML 格式错误
         summary = result.get('summary', '暂无总结').replace('"', "'")
 
         md_content = f"""---
@@ -110,19 +161,17 @@ date: 2025-11-30
 > **摘要**：{summary}
 
 """
-        # 2. 原文全文 (折叠显示)
-        # 注意：<details> 内部保留空行，以确保 Markdown 渲染正常
+        # 修复原文分段显示问题
+        html_formatted_content = chap['content'].replace('\n', '<br>')
         md_content += f"""
 <details>
 <summary><strong>📄 点击展开/收起：本章原文全文</strong></summary>
 
-{chap['content']}
+{html_formatted_content}
 
 </details>
 
 """
-
-        # 3. 深度思考 (Analysis)
         md_content += f"""
 ## 🧠 深度思考与解读
 
@@ -130,28 +179,24 @@ date: 2025-11-30
 
 """
 
-        # 4. 金句摘录 (Quotes)
         if 'quotes' in result and result['quotes']:
             md_content += "### 💬 振聋发聩的金句\n"
             for q in result['quotes']:
                 md_content += f"> {q}\n>\n"
 
-        # 5. 底部导航 (关键修复：确保链接文件名与生成的一致)
         md_content += "\n---\n"
 
-        # 上一章
+        # 上一章链接
         if i > 0:
             prev_chap = chapters[i - 1]
             prev_title = get_safe_title_from_chap(prev_chap)
-            # 序号规则：上一章的索引是 i-1，所以它的序号是 (i-1)+1 = i
             prev_link_name = f"{i:02d}_{prev_title}"
             md_content += f"⬅️ 上一章：[[{prev_link_name}]] | "
 
-        # 下一章
+        # 下一章链接
         if i < len(chapters) - 1:
             next_chap = chapters[i + 1]
             next_title = get_safe_title_from_chap(next_chap)
-            # 序号规则：下一章的索引是 i+1，所以它的序号是 (i+1)+1 = i+2
             next_link_name = f"{i + 2:02d}_{next_title}"
             md_content += f"下一章：[[{next_link_name}]] ➡️"
 
@@ -160,18 +205,22 @@ date: 2025-11-30
             f.write(md_content)
 
         # --- F. 更新目录索引 ---
-        tags_str = ", ".join([f"`{t}`" for t in tags[:3]])  # 只展示前3个标签
-        # 使用相对路径链接，方便在 GitHub 或 Obsidian 中直接点击
+        tags_str = ", ".join([f"`{t}`" for t in tags[:3]])
         link = f"[{curr_safe_title}](./chapters/{file_name})"
         index_content += f"| {i + 1} | {link} | {tags_str} | {summary} |\n"
 
-    # 4. 循环结束后的收尾工作
+        # 【建议】每跑完一章就保存一次记忆，防止程序中途崩溃数据丢失
+        memory.save_memory(KB_DIR)
 
-    # A. 写入总索引
+    # 4. 循环结束后的收尾工作
     with open(KB_DIR / "00_全书概览_Index.md", "w", encoding="utf-8") as f:
         f.write(index_content)
 
-    # B. 【新增】保存知识图谱数据
+    # 保存最终 JSON
     memory.save_memory(KB_DIR)
+
+    # 【修改点 3】生成概念卡片
+    generate_concept_cards(memory)
+
     print(f"\n✅ 全部完成！知识库已生成在：{KB_DIR}")
     print("你可以直接用 Obsidian 打开此目录，体验最佳。")

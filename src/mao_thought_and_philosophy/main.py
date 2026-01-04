@@ -1,7 +1,6 @@
 """
-
-"""
 # src/mao_thought_and_philosophy/main.py
+"""
 from .config import setup_directories, validate_config
 from .processing.workflow import run_analysis
 

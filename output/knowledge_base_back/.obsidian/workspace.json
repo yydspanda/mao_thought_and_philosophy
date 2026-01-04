@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "chapters/09_开会要注意抓思想动向.md",
+                "file": "chapters/01_省委第一书记要抓理论工作.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "09_开会要注意抓思想动向"
+              "title": "01_省委第一书记要抓理论工作"
             }
           }
         ]
@@ -53,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "tag:意识形态建设",
+                "query": "tag:组织行为学",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -185,31 +185,31 @@
   },
   "active": "6fe4aae4c4f7be55",
   "lastOpenFiles": [
-    "concepts/思想形态责任制.md",
-    "concepts/解剖麻雀.md",
-    "chapters/10_文件、文章、讲话要准确、鲜明、生动.md",
+    "chapters/17_黄河是一条天生的引水渠.md",
+    "chapters/23_让我们来个读书比赛.md",
     "chapters/33_毛主席与农业学大寨.md",
-    "concepts/认知渐进导入法.md",
-    "concepts/辩证共识锻造法.md",
-    "concepts/思想动态预警系统.md",
+    "chapters/21_最好的学习是从自己的错误中学习.md",
+    "chapters/06_要反对官气.md",
+    "chapters/07_教育干部是一个战略问题.md",
+    "chapters/08_第一书记挂帅，办好报刊.md",
     "chapters/09_开会要注意抓思想动向.md",
-    "concepts/治病救人原则.md",
-    "concepts/真理优先原则.md",
-    "concepts/心理安全构建法.md",
-    "concepts/批判性阅读与联系分析法 (Critical Reading & Relational Analysis).md",
-    "concepts/革命精神与科学态度结合模型.md",
-    "concepts/对立统一规律.md",
-    "00_全书概览_Index.md",
+    "chapters/10_文件、文章、讲话要准确、鲜明、生动.md",
+    "chapters/11_对犯错误者的态度和方法.md",
+    "chapters/12_受到冤屈时应有的正确态度.md",
+    "chapters/13_调查研究中的言传身教.md",
+    "chapters/14_用心寻找当地群众中的先进经验.md",
+    "chapters/15_干部参加劳动是百年大计.md",
     "chapters/16_谁要念稿子，我就打瞌睡，以示反对.md",
-    "concepts/组织免疫系统激活机制.md",
+    "chapters/18_它是技术革命的萌芽.md",
+    "chapters/19_计划生育也有希望做好.md",
+    "chapters/20_必须利用商品生产和价值法则.md",
+    "chapters/22_把革命精神与科学态度结合起来.md",
+    "chapters/24_学习自然科学，丰富哲学思想.md",
     "chapters/25_学习经典著作，不迷信经典作家.md",
-    "concepts/霸王困境.md",
-    "concepts/霸王困境 (The Tyrants Dilemma).md",
-    "chapters/30_要尊重唯物论、尊重辩证法.md",
-    "concepts/百花齐放、百家争鸣矛盾处理方针.md",
-    "chapters/01_省委第一书记要抓理论工作.md",
-    "concepts/政治道德一致性原则.md",
-    "concepts/政治资本估值模型.md",
-    "concepts/虚实结合会议决策法.md"
+    "chapters/26_学点历史，古为今用.md",
+    "chapters/27_学点外语，洋为中用.md",
+    "chapters/28_学点文学，调节生活，扩大视野.md",
+    "chapters/29_关于读书的方法.md",
+    "chapters/30_要尊重唯物论、尊重辩证法.md"
   ]
 }

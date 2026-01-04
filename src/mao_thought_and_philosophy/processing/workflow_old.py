@@ -1,17 +1,18 @@
-import datetime
 import re
-import sys
 import time
+import sys
+from pathlib import Path
 
 # 保持原有的导入不变
 from .prompt_templates import get_user_prompt, get_system_prompt
 from ..config import ASSETS_DIR, OUTPUT_DIR
 from ..core.graph_builder import ConceptMemory
 from ..core.llm_client import call_llm_json
-from ..core.loader import read_epub_chapters_mao_selected
+from ..core.loader import read_epub_chapters_custom
+
 
 # 定义输出路径
-KB_DIR = OUTPUT_DIR / "knowledge_base"
+KB_DIR = OUTPUT_DIR / "knowledge_base_back"
 CHAPTERS_DIR = KB_DIR / "chapters"
 CONCEPTS_DIR = KB_DIR / "concepts"
 
@@ -58,7 +59,6 @@ def generate_concept_cards(memory):
 
         file_path = CONCEPTS_DIR / f"{safe_name}.md"
         chapter_links = memory.appearances.get(name, [])
-        # 生成双向链接列表
         backlinks = ", ".join([f"[[{link}]]" for link in chapter_links])
 
         content = f"""---
@@ -85,8 +85,7 @@ def run_analysis():
     CHAPTERS_DIR.mkdir(parents=True, exist_ok=True)
 
     # 2. 加载电子书
-    epub_filename = "毛泽东选集一至七卷.epub"
-    epub_path = ASSETS_DIR / epub_filename
+    epub_path = ASSETS_DIR / "毛主席教我们当省委书记.epub"
     if not epub_path.exists():
         print(f"❌ 错误：在 {ASSETS_DIR} 下找不到电子书文件！")
         return
@@ -94,10 +93,8 @@ def run_analysis():
     book_title = epub_path.stem
     print(f"📖 正在解析《{book_title}》...")
 
-    # 获取针对本书的 System Prompt
     current_system_prompt = get_system_prompt(book_title)
-    # 【核心调用】使用新的加载器，获取带层级（卷、时期）和日期的数据
-    chapters = read_epub_chapters_mao_selected(epub_path)
+    chapters = read_epub_chapters_custom(epub_path)
 
     memory = ConceptMemory()
     json_path = KB_DIR / "knowledge_graph.json"
@@ -106,48 +103,39 @@ def run_analysis():
     print(f"📚 共识别出 {len(chapters)} 个章节。")
 
     # =================================================================
-    # 启动延时策略 (按需开启)
-    # print("🚦 依据策略，程序将在 5 秒后开始处理...")
-    # wait_with_countdown(5, "启动延迟")
+    # 【新增逻辑 1】启动时强制等待 1 小时 (3600秒)
+    # 只有当确实有任务要跑时才等待，这里简单处理，直接等
     # =================================================================
+    print("🚦 依据策略，程序将在 1 小时后开始处理...")
+    # wait_with_countdown(3600, "启动延迟")
+    # 测试时可以把上面改成 wait_with_countdown(5, "启动延迟") 看效果
 
-    # 初始化全书索引内容 (Markdown 表格)
-    # 【新增】增加了 卷、时期、日期 列
-    index_content = "# 全书目录与索引\n\n| 序号 | 卷别 | 时期 | 章节 | 发表日期 | 核心标签 | 一句话总结 |\n|---|---|---|---|---|---|---|\n"
+    index_content = "# 全书目录与索引\n\n| 序号 | 章节 | 核心标签 | 一句话总结 |\n|---|---|---|---|\n"
 
     # 3. 逐章处理
     for i, chap in enumerate(chapters):
 
         curr_safe_title = get_safe_title_from_chap(chap)
-        # 生成带序号的文件名，保证排序
-        file_name = f"{i + 1:03d}_{curr_safe_title}.md"
+        file_name = f"{i + 1:02d}_{curr_safe_title}.md"
         file_path = CHAPTERS_DIR / file_name
-        # 链接名（用于 Obsidian 双链）
-        link_name = f"{i + 1:03d}_{curr_safe_title}"
-        # 提取元数据 (使用 .get 提供默认值，防止旧数据报错)
-        volume = chap.get('volume', '未分类')
-        period = chap.get('period', '未分类')
-        publish_date = chap.get('date', '未知')
+        link_name = f"{i + 1:02d}_{curr_safe_title}"
+
         # =================================================================
         # 断点续传：检查文件是否已存在
         # =================================================================
         if file_path.exists():
             print(f"⏩ [已存在，跳过] {file_name}")
             try:
-                # 尝试读取已存在文件的 Frontmatter 或内容，填入索引表
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
-                    # 正则提取摘要
                     summary_match = re.search(r'> \*\*摘要\*\*：(.*?)\n', content)
                     summary = summary_match.group(1).strip() if summary_match else "（摘要读取失败）"
-                    # 正则提取标签
                     tags_match = re.search(r'tags: \[(.*?)\]', content)
                     tags_str = tags_match.group(1) if tags_match else ""
                     tags_clean = tags_str.replace("'", "").replace('"', "")
                     tags_display = ", ".join([f"`{t.strip()}`" for t in tags_clean.split(',')][:3])
-                    # 构建索引行
                     link = f"[{curr_safe_title}](./chapters/{file_name})"
-                    index_content += f"| {i + 1} | {volume} | {period} | {link} | {publish_date} | {tags_display} | {summary} |\n"
+                    index_content += f"| {i + 1} | {link} | {tags_display} | {summary} |\n"
             except Exception:
                 pass
             continue  # 跳过，且不进行等待
@@ -156,13 +144,10 @@ def run_analysis():
         print(f"⚡ [{i + 1}/{len(chapters)}] 正在深度研读：{curr_safe_title} ...")
 
         # --- B. AI 分析 ---
-        # 获取上下文记忆（Top 20 概念）
         context_str = memory.get_context_string()
-        # 渲染 User Prompt
         prompt = get_user_prompt(chap['content'], context_str)
 
         try:
-            # 调用 LLM
             result = call_llm_json(current_system_prompt, prompt)
         except Exception as e:
             print(f"   ⚠️ 分析失败，跳过本章: {str(e)}")
@@ -171,36 +156,23 @@ def run_analysis():
         # --- C. 更新知识图谱记忆 ---
         concepts = result.get('key_concepts', [])
         memory.update(concepts, link_name)
+
         # --- D. 组装 Markdown 内容 ---
         tags = result.get('tags', [])
         summary = result.get('summary', '暂无总结').replace('"', "'")
-        # 【优化】将“时期”和“卷”作为标签加入，方便筛选
-        if period != '未分类' and period not in tags:
-            tags.append(period)
-        if volume != '未分类' and volume not in tags:
-            tags.append(volume)
-        # 获取当前日期
-        today_date = datetime.date.today().isoformat()
-        # 构建 Frontmatter (YAML 头)
+
         md_content = f"""---
 title: "{curr_safe_title}"
 order: {i + 1}
-volume: "{volume}"
-period: "{period}"
-publish_date: "{publish_date}"
-tags: {tags}
-date: {today_date}
+tags: {tags}kl
+date: 2025-11-30
 ---
 
 # 第{i + 1}章 {curr_safe_title}
 
-> **归属**：{volume} / {period}
-> **发表时间**：{publish_date}
-
 > **摘要**：{summary}
 
 """
-        # 添加原文折叠块
         html_formatted_content = chap['content'].replace('\n', '<br>')
         md_content += f"""
 <details>
@@ -211,7 +183,6 @@ date: {today_date}
 </details>
 
 """
-        # 添加 AI 分析正文
         md_content += f"""
 ## 🧠 深度思考与解读
 
@@ -219,7 +190,6 @@ date: {today_date}
 
 """
 
-        # 添加金句
         if 'quotes' in result and result['quotes']:
             md_content += "### 💬 振聋发聩的金句\n"
             for q in result['quotes']:
@@ -227,43 +197,42 @@ date: {today_date}
 
         md_content += "\n---\n"
 
-        # 添加上一章/下一章导航
         if i > 0:
             prev_chap = chapters[i - 1]
             prev_title = get_safe_title_from_chap(prev_chap)
-            prev_link_name = f"{i:03d}_{prev_title}"  # 注意这里序号格式保持一致
+            prev_link_name = f"{i:02d}_{prev_title}"
             md_content += f"⬅️ 上一章：[[{prev_link_name}]] | "
 
         if i < len(chapters) - 1:
             next_chap = chapters[i + 1]
             next_title = get_safe_title_from_chap(next_chap)
-            next_link_name = f"{i + 2:03d}_{next_title}"
+            next_link_name = f"{i + 2:02d}_{next_title}"
             md_content += f"下一章：[[{next_link_name}]] ➡️"
 
-        # 写入文件
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(md_content)
 
-        # 更新索引表字符串
-        tags_str_display = ", ".join([f"`{t}`" for t in tags[:3]])
+        tags_str = ", ".join([f"`{t}`" for t in tags[:3]])
         link = f"[{curr_safe_title}](./chapters/{file_name})"
-        index_content += f"| {i + 1} | {volume} | {period} | {link} | {publish_date} | {tags_str_display} | {summary} |\n"
+        index_content += f"| {i + 1} | {link} | {tags_str} | {summary} |\n"
 
         # 实时保存记忆，防止中断
         memory.save_memory(KB_DIR)
 
         # =================================================================
-        # API 冷却策略
+        # 【新增逻辑 2】章节间歇期等待 30 分钟 (1800秒)
         # =================================================================
-        if i < len(chapters) - 1:
-            print("💤 休息 5 秒以保护 API...")
-            wait_with_countdown(120, "API 冷却")
+        # 只有当不是最后一章时才等待
+        # if i < len(chapters) - 1:
+        #     print("💤 本章处理完毕，休息 30 分钟以恢复 API 额度...")
+        #     wait_with_countdown(1800, "API 冷却中")
+            # 测试时可以把上面改成 wait_with_countdown(5, "API 冷却中")
         # =================================================================
 
-    # 4. 循环结束，保存索引文件
+    # 4. 循环结束
     with open(KB_DIR / "00_全书概览_Index.md", "w", encoding="utf-8") as f:
         f.write(index_content)
-    # 最终保存记忆并生成概念卡片
+
     memory.save_memory(KB_DIR)
     generate_concept_cards(memory)
 

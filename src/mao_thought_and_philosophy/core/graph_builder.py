@@ -110,3 +110,35 @@ class ConceptMemory:
             print(f"💾 知识图谱数据已保存至: {file_path}")
         except Exception as e:
             print(f"❌ 保存知识图谱失败: {e}")
+
+    def purge_chapter_memory(self, chapter_title_key):
+        """
+        【新增】在重跑某章节前，清除该章节在图谱中的旧数据。
+        防止出现重复的引用，或保留了已被删除章节的概念。
+        """
+        print(f"🧹 正在清洗旧记忆: {chapter_title_key} ...")
+
+        # 1. 清洗 appearances (出处)
+        concepts_to_remove = []
+
+        for name, links in self.appearances.items():
+            # 如果该章节在引用列表中，移除它
+            if chapter_title_key in links:
+                links.remove(chapter_title_key)
+
+            # 如果移除后，该概念没有任何出处了，标记为待删除
+            if not links:
+                concepts_to_remove.append(name)
+
+        # 2. 清洗 concepts (定义) 和 relations
+        # 如果一个概念没有任何章节引用它了，说明它已经是个“孤儿”，应该删掉
+        for name in concepts_to_remove:
+            if name in self.concepts:
+                del self.concepts[name]
+            if name in self.appearances:
+                del self.appearances[name]
+            # 顺便清理关系 (简单的遍历清洗)
+            self.relations = [r for r in self.relations if r[0] != name and r[1] != name]
+
+        if concepts_to_remove:
+            print(f"   👋 移除了 {len(concepts_to_remove)} 个仅由该章节定义的孤立概念。")

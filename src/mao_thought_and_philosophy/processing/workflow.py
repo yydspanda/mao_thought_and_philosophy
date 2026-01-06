@@ -2,6 +2,7 @@ import datetime
 import re
 import sys
 import time
+from pathlib import Path
 
 # 保持原有的导入不变
 from .prompt_templates import get_user_prompt, get_system_prompt
@@ -10,18 +11,12 @@ from ..core.graph_builder import ConceptMemory
 from ..core.llm_client import call_llm_json
 from ..core.loader import read_epub_chapters_mao_selected
 
-# 定义输出路径
-KB_DIR = OUTPUT_DIR / "knowledge_base"
-CHAPTERS_DIR = KB_DIR / "chapters"
-CONCEPTS_DIR = KB_DIR / "concepts"
-
 
 def sanitize_filename(name):
-    """【增强版】清洗文件名"""
+    # ... 安全文件名
     name = name.replace('.html', '').replace('.xhtml', '')
     name = re.sub(r'[\\/*?:"<>|“”‘’\'"]', "", name)
     return name.strip()[:60]
-
 
 def get_safe_title_from_chap(chapter_data):
     """辅助函数：从章节数据中提取并清洗标题"""
@@ -47,16 +42,18 @@ def wait_with_countdown(seconds, message="等待中"):
     print("\n✅ 等待结束，继续执行！\n")
 
 
-def generate_concept_cards(memory):
+def generate_concept_cards(memory, output_dir: Path):
     """将 JSON 数据转化为 Obsidian 可读的 Markdown 概念卡片"""
-    CONCEPTS_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"\n📇 正在生成 {len(memory.concepts)} 张概念卡片...")
+    concepts_dir = output_dir / "concepts"
+    concepts_dir.mkdir(parents=True, exist_ok=True)
+    print(f"\n📇 正在生成概念卡片至: {concepts_dir}")
 
     for name, definition in memory.concepts.items():
         safe_name = sanitize_filename(name)
-        if not safe_name: continue
+        if not safe_name:
+            continue
 
-        file_path = CONCEPTS_DIR / f"{safe_name}.md"
+        file_path = concepts_dir / f"{safe_name}.md"
         chapter_links = memory.appearances.get(name, [])
         # 生成双向链接列表
         backlinks = ", ".join([f"[[{link}]]" for link in chapter_links])
@@ -76,31 +73,34 @@ tags: [核心概念]
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
 
-    print(f"✅ 概念卡片已生成至: {CONCEPTS_DIR}")
+    print("✅ 概念卡片更新完毕")
 
 
-def run_analysis():
-    # 1. 初始化目录
-    KB_DIR.mkdir(parents=True, exist_ok=True)
-    CHAPTERS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # 2. 加载电子书
-    epub_filename = "毛泽东选集一至七卷.epub"
+def run_analysis(epub_filename: str):
+    # 1. 动态构建路径
     epub_path = ASSETS_DIR / epub_filename
     if not epub_path.exists():
-        print(f"❌ 错误：在 {ASSETS_DIR} 下找不到电子书文件！")
+        print(f"❌ 错误：在 {ASSETS_DIR} 下找不到文件：{epub_filename}")
         return
+    book_title = epub_path.stem  # "毛泽东选集一至七卷"
+    safe_book_title = sanitize_filename(book_title)
+    # 【关键】为这本书创建独立的知识库目录
+    current_kb_dir = OUTPUT_DIR / safe_book_title
+    chapters_dir = current_kb_dir / "chapters"
 
-    book_title = epub_path.stem
+    current_kb_dir.mkdir(parents=True, exist_ok=True)
+    chapters_dir.mkdir(parents=True, exist_ok=True)
+
     print(f"📖 正在解析《{book_title}》...")
+    print(f"📂 输出目录: {current_kb_dir}")
 
-    # 获取针对本书的 System Prompt
+    # 2. 加载数据
     current_system_prompt = get_system_prompt(book_title)
     # 【核心调用】使用新的加载器，获取带层级（卷、时期）和日期的数据
     chapters = read_epub_chapters_mao_selected(epub_path)
-
+    # 加载针对这本书的记忆文件
     memory = ConceptMemory()
-    json_path = KB_DIR / "knowledge_graph.json"
+    json_path = current_kb_dir / "knowledge_graph.json"
     memory.load_from_file(json_path)
 
     print(f"📚 共识别出 {len(chapters)} 个章节。")
@@ -121,7 +121,7 @@ def run_analysis():
         curr_safe_title = get_safe_title_from_chap(chap)
         # 生成带序号的文件名，保证排序
         file_name = f"{i + 1:03d}_{curr_safe_title}.md"
-        file_path = CHAPTERS_DIR / file_name
+        file_path = chapters_dir / file_name
         # 链接名（用于 Obsidian 双链）
         link_name = f"{i + 1:03d}_{curr_safe_title}"
         # 提取元数据 (使用 .get 提供默认值，防止旧数据报错)
@@ -152,7 +152,10 @@ def run_analysis():
                 pass
             continue  # 跳过，且不进行等待
         # =================================================================
-
+        # 开始处理新章节（或被删除后重跑的章节）
+        # =================================================================
+        # 【核心步骤】防止污染：先从内存中把这一章的旧痕迹擦掉
+        memory.purge_chapter_memory(link_name)
         print(f"⚡ [{i + 1}/{len(chapters)}] 正在深度研读：{curr_safe_title} ...")
 
         # --- B. AI 分析 ---
@@ -249,8 +252,8 @@ date: {today_date}
         link = f"[{curr_safe_title}](./chapters/{file_name})"
         index_content += f"| {i + 1} | {volume} | {period} | {link} | {publish_date} | {tags_str_display} | {summary} |\n"
 
-        # 实时保存记忆，防止中断
-        memory.save_memory(KB_DIR)
+        # 实时保存记忆到这本书的专用目录
+        memory.save_memory(current_kb_dir)
 
         # =================================================================
         # API 冷却策略
@@ -261,12 +264,13 @@ date: {today_date}
             wait_with_countdown(sec, "API 冷却")
         # =================================================================
 
-    # 4. 循环结束，保存索引文件
-    with open(KB_DIR / "00_全书概览_Index.md", "w", encoding="utf-8") as f:
+    # 4. 结束
+    with open(current_kb_dir / "00_全书概览_Index.md", "w", encoding="utf-8") as f:
         f.write(index_content)
-    # 最终保存记忆并生成概念卡片
-    memory.save_memory(KB_DIR)
-    generate_concept_cards(memory)
 
-    print(f"\n✅ 全部完成！知识库已生成在：{KB_DIR}")
+    memory.save_memory(current_kb_dir)
+    # 生成卡片到专用目录
+    generate_concept_cards(memory, current_kb_dir)
+
+    print(f"\n✅ 全部完成！")
     print("你可以直接用 Obsidian 打开此目录，体验最佳。")

@@ -1,0 +1,226 @@
+{
+  "main": {
+    "id": "5b762210d6f3ad91",
+    "type": "split",
+    "children": [
+      {
+        "id": "484a43c422bc3cc3",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ead12a9b8b29b8c1",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "chapters/001_中国社会各阶级的分析.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "001_中国社会各阶级的分析"
+            }
+          },
+          {
+            "id": "84f9d230a5ddddcc",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "concepts/深度利益相关者分析.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "深度利益相关者分析"
+            }
+          },
+          {
+            "id": "b93c40cfed2cba84",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "chapters/003_中国的红色政权为什么能够存在？.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "003_中国的红色政权为什么能够存在？"
+            }
+          }
+        ],
+        "currentTab": 2
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "322ad0026ce46c35",
+    "type": "split",
+    "children": [
+      {
+        "id": "e574e97ff42f8000",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c1ce6f84d116d70e",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "0ae401df544c5aed",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "cf6a2448530fc019",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "dc709091182dad85",
+    "type": "split",
+    "children": [
+      {
+        "id": "03d2d72b84d109b6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "848f8a7426fb8d6b",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "chapters/003_中国的红色政权为什么能够存在？.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "003_中国的红色政权为什么能够存在？ 的反向链接列表"
+            }
+          },
+          {
+            "id": "bd6baf87bfbd7d75",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "chapters/003_中国的红色政权为什么能够存在？.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "003_中国的红色政权为什么能够存在？ 的出链列表"
+            }
+          },
+          {
+            "id": "8edca27e4f7efb7f",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "59d9d52e33e5b250",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "2e0db3e9bf2997de",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "chapters/003_中国的红色政权为什么能够存在？.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "003_中国的红色政权为什么能够存在？ 的大纲"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:创建新数据库": false
+    }
+  },
+  "active": "b93c40cfed2cba84",
+  "lastOpenFiles": [
+    "chapters/001_中国社会各阶级的分析.md",
+    "concepts/深度利益相关者分析.md",
+    "chapters/050_新民主主义的宪政.md",
+    "chapters/036_和中央社、扫荡报、新民报三记者的谈话.md",
+    "chapters/026_抗日游击战争的战略问题.md",
+    "chapters/004_井冈山的斗争.md",
+    "concepts/动态战略调整模型.md",
+    "00_全书概览_Index.md"
+  ]
+}

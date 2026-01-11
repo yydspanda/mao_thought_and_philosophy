@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "chapters/01_省委第一书记要抓理论工作.md",
+                "file": "chapters/03_一定要防止特殊化、贵族化.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "01_省委第一书记要抓理论工作"
+              "title": "03_一定要防止特殊化、贵族化"
             }
           }
         ]
@@ -185,6 +185,10 @@
   },
   "active": "6fe4aae4c4f7be55",
   "lastOpenFiles": [
+    "chapters/02_在路线问题上要戒左戒右.md",
+    "chapters/01_省委第一书记要抓理论工作.md",
+    "chapters/30_要尊重唯物论、尊重辩证法.md",
+    "00_全书概览_Index.md",
     "chapters/17_黄河是一条天生的引水渠.md",
     "chapters/23_让我们来个读书比赛.md",
     "chapters/33_毛主席与农业学大寨.md",
@@ -206,10 +210,6 @@
     "chapters/22_把革命精神与科学态度结合起来.md",
     "chapters/24_学习自然科学，丰富哲学思想.md",
     "chapters/25_学习经典著作，不迷信经典作家.md",
-    "chapters/26_学点历史，古为今用.md",
-    "chapters/27_学点外语，洋为中用.md",
-    "chapters/28_学点文学，调节生活，扩大视野.md",
-    "chapters/29_关于读书的方法.md",
-    "chapters/30_要尊重唯物论、尊重辩证法.md"
+    "chapters/26_学点历史，古为今用.md"
   ]
 }

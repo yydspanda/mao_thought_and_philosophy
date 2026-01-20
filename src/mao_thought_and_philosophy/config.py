@@ -1,6 +1,7 @@
 """
 config: 项目目录配置与环境变量管理
 """
+
 import os
 import sys
 from pathlib import Path
@@ -50,6 +51,7 @@ LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o")
 
 # --- 4. 辅助函数 ---
 
+
 def setup_directories():
     """确保输出目录存在"""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -62,6 +64,5 @@ def validate_config():
     """
     if not LLM_API_KEY:
         raise ValueError(
-            f"❌ 未找到 LLM_API_KEY！\n"
-            f"请确保在 {ENV_PATH} 文件中配置了该变量。"
+            f"❌ 未找到 LLM_API_KEY！\n请确保在 {ENV_PATH} 文件中配置了该变量。"
         )

@@ -1,0 +1,48 @@
+{
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "pickArgs",
+      "type": "pickString",
+      "description": "选择要传递给程序的参数",
+      "options": [
+        // 选项1: 管理角色
+        "--file 毛泽东选集一至七卷.epub --role management",
+        // 选项2: 牛马角色
+        "--file 毛泽东选集一至七卷.epub --role 牛马",
+        // 选项3: 不带参数
+        ""
+      ],
+      "default": ""
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Python Debugger: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python: Debug Demo with Args/Env",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/debug_demo.py",
+      "console": "integratedTerminal",
+      "args": ["--user=test", "--verbose"],
+      "env": {
+        "MY_APP_MODE": "debugging"
+      }
+    },
+    {
+      "name": "Python Debugger: Module",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "mao_thought_and_philosophy.main",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "args": "${input:pickArgs}"
+    }
+  ]
+}

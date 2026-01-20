@@ -1,0 +1,43 @@
+{
+  // =================================================================
+  // 核心：格式化与代码修复 (使用 Ruff)
+  // Ruff 是一个 \u0906\u0932-in-one 的工具，能同时完成格式化、代码检查和 import 排序
+  // =================================================================
+
+  // 1. Python 特定设置
+  "[python]": {
+    // 指定 Ruff 为 Python 文件的默认格式化工具
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    // 在保存时运行“代码操作”
+    "editor.codeActionsOnSave": {
+      // 开启“修复所有问题”，这会修复Ruff能自动修复的lint错误
+      "source.fixAll.ruff": "explicit",
+      // 显式开启“组织import”，这会删除未使用的import并排序
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+
+  // 2. 开启“保存时自动格式化”
+  // 当你按下 Ctrl+S，Ruff 会立刻格式化你的代码
+  "editor.formatOnSave": true,
+
+  // ================================================================
+  // Python 解释器设置
+  // ================================================================
+
+  // 告诉 VS Code Python 插件去使用我们 .venv 目录下的解释器
+  // 虽然插件通常能自动发现，但明确指定是最佳实践
+  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+  // ================================================================
+  // 通用编辑器和文件设置
+  // ================================================================
+  "editor.tabSize": 4, // Python 社区规范，使用 4 个空格
+  "files.autoSave": "onFocusChange",
+  "files.exclude": {
+    "**/.git": true,
+    "**/__pycache__": true, // 排除 Python 缓存文件
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true
+  },
+  "python.analysis.extraPaths": ["./src"]
+}

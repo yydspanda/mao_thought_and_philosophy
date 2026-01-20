@@ -1,6 +1,5 @@
 # src/mao_thought_and_philosophy/core/graph_builder.py
 import json
-import os
 from pathlib import Path
 
 
@@ -20,7 +19,7 @@ class ConceptMemory:
         """
         if file_path.exists():
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     # 使用 .get 防止旧数据字段缺失导致报错
                     self.concepts = data.get("concepts", {})
@@ -42,8 +41,8 @@ class ConceptMemory:
 
         for concept in new_concepts:
             # 使用 .get 安全获取
-            name = concept.get('name')
-            definition = concept.get('definition')
+            name = concept.get("name")
+            definition = concept.get("definition")
 
             # 如果关键字段缺失，跳过
             if not name or not definition:
@@ -73,9 +72,7 @@ class ConceptMemory:
 
         # 排序：按“出现章节数”从多到少排序，优先把高频概念发给 AI
         sorted_concepts = sorted(
-            self.appearances.items(),
-            key=lambda x: len(x[1]),
-            reverse=True
+            self.appearances.items(), key=lambda x: len(x[1]), reverse=True
         )
 
         count = 0
@@ -85,7 +82,9 @@ class ConceptMemory:
 
             definition = self.concepts.get(name, "暂无定义")
             # 简单截断，防止 Token 溢出
-            clean_def = definition[:100] + "..." if len(definition) > 100 else definition
+            clean_def = (
+                definition[:100] + "..." if len(definition) > 100 else definition
+            )
 
             summary += f"- {name}: {clean_def}\n"
             count += 1
@@ -99,13 +98,13 @@ class ConceptMemory:
         data = {
             "concepts": self.concepts,
             "relations": self.relations,
-            "appearances": self.appearances
+            "appearances": self.appearances,
         }
 
         file_path = output_dir / "knowledge_graph.json"
 
         try:
-            with open(file_path, "w", encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             print(f"💾 知识图谱数据已保存至: {file_path}")
         except Exception as e:
@@ -138,7 +137,11 @@ class ConceptMemory:
             if name in self.appearances:
                 del self.appearances[name]
             # 顺便清理关系 (简单的遍历清洗)
-            self.relations = [r for r in self.relations if r[0] != name and r[1] != name]
+            self.relations = [
+                r for r in self.relations if r[0] != name and r[1] != name
+            ]
 
         if concepts_to_remove:
-            print(f"   👋 移除了 {len(concepts_to_remove)} 个仅由该章节定义的孤立概念。")
+            print(
+                f"   👋 移除了 {len(concepts_to_remove)} 个仅由该章节定义的孤立概念。"
+            )

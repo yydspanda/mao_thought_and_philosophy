@@ -1,17 +1,18 @@
+import logging
 import re
 import warnings
-from typing import Optional, Set, List, Dict, Any
+from importlib.resources import as_file
+from typing import Any, Dict, List, Optional, Set
 
-import ebooklib
+import ebooklib  # type: ignore
 from bs4 import BeautifulSoup
 from ebooklib import epub
-import logging
 
 # 忽略 ebooklib 的未来警告
 from mao_thought_and_philosophy.config import ASSETS_DIR
 
 # ebooklib 有时候会报一些不影响运行的 FutureWarnings，我们忽略它以保持控制台干净
-warnings.filterwarnings("ignore", category=UserWarning, module='ebooklib')
+warnings.filterwarnings("ignore", category=UserWarning, module="ebooklib")
 
 
 def read_epub_chapters_common(epub_path):
@@ -37,7 +38,7 @@ def read_epub_chapters_common(epub_path):
         print(f"❌ 无法打开电子书: {e}")
         return []
 
-    chapters = []
+    chapters: List[Dict[str, str]] = []
 
     # 2. 遍历书中的每一个 "Item" (元素)
     # EPUB 里不仅有文字，还有图片(ITEM_IMAGE)、样式(ITEM_STYLE)等
@@ -49,15 +50,13 @@ def read_epub_chapters_common(epub_path):
     #     print(raw_content.decode('utf-8'))
 
     for item in book.get_items():
-
         # 3. 过滤：我们只关心 "文档" 类型 (即 HTML/XHTML 文本)
         if item.get_type() == ebooklib.ITEM_DOCUMENT:
-
             # 获取该文件的原始二进制内容 (bytes)
             raw_content = item.get_content()
             # 4. 解析 HTML
             # 使用 BeautifulSoup 将乱糟糟的 HTML 标签结构化
-            soup = BeautifulSoup(raw_content, 'html.parser')
+            soup = BeautifulSoup(raw_content, "html.parser")
 
             # --- 核心技术点 ---
             # get_text() 负责把 <p>Hello</p> 变成 "Hello"
@@ -69,7 +68,7 @@ def read_epub_chapters_common(epub_path):
             #
             # 参数 strip=True:
             # 去除每段文字首尾多余的空格。
-            text_content = soup.get_text(separator='\n\n', strip=True)
+            text_content = soup.get_text(separator="\n\n", strip=True)
 
             # 5. 降噪过滤
             # 很多 EPUB 会把目录、版权页、封面也当成独立的文档。
@@ -80,10 +79,7 @@ def read_epub_chapters_common(epub_path):
                 # 后面 workflow 里会用它来做文件名
                 chapter_id = item.get_name()
 
-                chapters.append({
-                    "id": chapter_id,
-                    "content": text_content
-                })
+                chapters.append({"id": chapter_id, "content": text_content})
 
     return chapters
 
@@ -98,19 +94,19 @@ def read_epub_chapters_custom(epub_path):
         print(f"❌ 无法打开电子书: {e}")
         return []
 
-    chapters = []
+    chapters: List[Dict[str, Any]] = []
 
     for item in book.get_items():
         if item.get_type() == ebooklib.ITEM_DOCUMENT:
             # 1. 创建 Soup 对象
-            soup = BeautifulSoup(item.get_content(), 'html.parser')
+            soup = BeautifulSoup(item.get_content(), "html.parser")
 
             # --- 2. 优先提取并移除标题 (核心修改) ---
             extracted_title = None
 
             # 我们按照优先级查找标题标签
             # 这里的逻辑是：一旦找到了标题，记录下来，然后立马把它从 soup 里删掉！
-            for tag in ['h1', 'h2', 'h3', 'title']:
+            for tag in ["h1", "h2", "h3", "title"]:
                 header_tag = soup.find(tag)
                 if header_tag and header_tag.get_text(strip=True):
                     # A. 提取标题文本
@@ -125,11 +121,13 @@ def read_epub_chapters_custom(epub_path):
             # 如果没找到 HTML 标题，用文件名做保底
             if not extracted_title:
                 file_id = item.get_name()
-                extracted_title = file_id.split('/')[-1].replace('.xhtml', '').replace('.html', '')
+                extracted_title = (
+                    file_id.split("/")[-1].replace(".xhtml", "").replace(".html", "")
+                )
 
             # --- 3. 提取剩余的正文 ---
             # 此时 soup 里已经没有那个 h1/h2 标签了，所以 content 不会包含标题
-            text_content = soup.get_text(separator='\n\n', strip=True)
+            text_content = soup.get_text(separator="\n\n", strip=True)
 
             # 再次清洗：有时候 decompose 后开头会有很多空行
             text_content = text_content.strip()
@@ -139,17 +137,26 @@ def read_epub_chapters_custom(epub_path):
             # 我们做一次字符串层面的检查：如果正文开头就是标题，把它切掉。
             if text_content.startswith(extracted_title):
                 # 切片，去掉标题长度，再去掉可能紧跟的换行符
-                text_content = text_content[len(extracted_title):].strip()
+                text_content = text_content[len(extracted_title) :].strip()
 
             # 过滤过短章节
             if len(text_content) > 300:
-                chapters.append({
-                    "id": item.get_name(),
-                    "title": extracted_title,
-                    "content": text_content
-                })
+                chapters.append(
+                    {
+                        "id": item.get_name(),
+                        "title": extracted_title,
+                        "content": text_content,
+                    }
+                )
 
-    return [{'id': item.get('id'), 'title': item.get('title'), 'content': item.get('content')} for index, item in enumerate(chapters[3:-1])]
+    return [
+        {
+            "id": item.get("id"),
+            "title": item.get("title"),
+            "content": item.get("content"),
+        }
+        for index, item in enumerate(chapters[3:-1])
+    ]
 
 
 def _extract_date_from_soup(soup):
@@ -159,31 +166,47 @@ def _extract_date_from_soup(soup):
     """
     # 尝试找包含年份的段落
     # 正则匹配：以括号开头，包含“年”，以括号结尾
-    date_pattern = re.compile(r'^[（(].*?年.*?[）)]$')
+    date_pattern = re.compile(r"^[（(].*?年.*?[）)]$")
 
     # 优先找 class="a0" 的 p 标签 (根据你提供的 CSS，a0 是居中且常用于日期)
-    for p in soup.find_all('p', class_='a0'):
+    for p in soup.find_all("p", class_="a0"):
         text = p.get_text(strip=True)
         if date_pattern.match(text):
-            return text.replace('（', '').replace('）', '').replace('(', '').replace(')', '')
+            return (
+                text.replace("（", "")
+                .replace("）", "")
+                .replace("(", "")
+                .replace(")", "")
+            )
 
     # 如果没找到，扫一遍前 5 个段落
-    for p in soup.find_all('p', limit=5):
+    for p in soup.find_all("p", limit=5):
         text = p.get_text(strip=True)
         if date_pattern.match(text):
-            return text.replace('（', '').replace('）', '').replace('(', '').replace(')', '')
+            return (
+                text.replace("（", "")
+                .replace("）", "")
+                .replace("(", "")
+                .replace(")", "")
+            )
 
     return "日期未知"
 
 
 # 预编译正则，提升效率
 # 匹配：(一九二五年十二月一日) 或 （一九二六年三月）
-DATE_PATTERN = re.compile(r'^[（(].*?年.*?[）)]$')
+DATE_PATTERN = re.compile(r"^[（(].*?年.*?[）)]$")
 
 # 默认排除的标题集合
 DEFAULT_EXCLUDED_TITLES = {
-    '第二版出版说明', '本书出版的说明', '出版说明',
-    '静火有言', '目　录', '版本信息', '版权页', '封面'
+    "第二版出版说明",
+    "本书出版的说明",
+    "出版说明",
+    "静火有言",
+    "目　录",
+    "版本信息",
+    "版权页",
+    "封面",
 }
 
 
@@ -195,9 +218,11 @@ class MaoEpubLoader:
 
     def __init__(self, epub_path: str, excluded_titles: Optional[Set[str]] = None):
         self.epub_path = epub_path
-        self.excluded_titles = excluded_titles if excluded_titles else DEFAULT_EXCLUDED_TITLES
-        self.book = None
-        self.chapters = []
+        self.excluded_titles = (
+            excluded_titles if excluded_titles else DEFAULT_EXCLUDED_TITLES
+        )
+        self.book: Optional[epub.EpubBook] = None
+        self.chapters: List[Dict[str, Any]] = []
 
     def load(self) -> List[Dict[str, Any]]:
         """主入口：读取并解析 EPUB"""
@@ -205,6 +230,9 @@ class MaoEpubLoader:
             self.book = epub.read_epub(self.epub_path)
         except Exception as e:
             logging.error(f"❌ 无法打开电子书 {self.epub_path}: {e}")
+            return []
+
+        if self.book is None:
             return []
 
         # 从目录树根节点开始递归
@@ -219,7 +247,11 @@ class MaoEpubLoader:
             # 1. 节点是目录容器 (Section) -> Tuple(Section, Children)
             if isinstance(item, (tuple, list)):
                 section_obj, children = item
-                title = section_obj.title if hasattr(section_obj, 'title') else str(section_obj)
+                title = (
+                    section_obj.title
+                    if hasattr(section_obj, "title")
+                    else str(section_obj)
+                )
                 # 递归进入下一层，层级列表 +1
                 self._walk_toc(children, hierarchy + [title])
 
@@ -236,8 +268,10 @@ class MaoEpubLoader:
             return
 
         # 获取文件内容
-        href = link.href.split('#')[0]
+        href = link.href.split("#")[0]
         try:
+            if self.book is None:  # Guard for mypy
+                return
             item = self.book.get_item_with_href(href)
             if not item:
                 return
@@ -245,7 +279,7 @@ class MaoEpubLoader:
             return  # 甚至可以 log warning
 
         # 解析 HTML
-        soup = BeautifulSoup(item.get_content(), 'html.parser')
+        soup = BeautifulSoup(item.get_content(), "html.parser")
 
         # --- 提取元数据 ---
         publish_date = self._extract_date(soup)
@@ -254,7 +288,7 @@ class MaoEpubLoader:
         self._clean_soup(soup, title)
 
         # --- 提取纯文本 ---
-        content = soup.get_text(separator='\n\n', strip=True)
+        content = soup.get_text(separator="\n\n", strip=True)
 
         # --- 后处理文本 (去除残留日期等) ---
         content = self._post_process_content(content, publish_date, title)
@@ -267,36 +301,47 @@ class MaoEpubLoader:
         volume = hierarchy[0] if len(hierarchy) >= 1 else "未分类"
         period = hierarchy[1] if len(hierarchy) >= 2 else "未分类"
 
-        self.chapters.append({
-            "id": href,
-            "title": title,
-            "volume": volume,
-            "period": period,
-            "date": publish_date,
-            "content": content
-        })
+        self.chapters.append(
+            {
+                "id": href,
+                "title": title,
+                "volume": volume,
+                "period": period,
+                "date": publish_date,
+                "content": content,
+            }
+        )
 
     def _extract_date(self, soup: BeautifulSoup) -> str:
-
         """
-            特化功能：从 HTML 中提取（一九xx年x月x日）格式的日期。
-            观察你的 XML，日期通常在 <p class="a0"><span class="f2">...</span></p> 中
+        特化功能：从 HTML 中提取（一九xx年x月x日）格式的日期。
+        观察你的 XML，日期通常在 <p class="a0"><span class="f2">...</span></p> 中
         """
         # 尝试找包含年份的段落
         # 正则匹配：以括号开头，包含“年”，以括号结尾
-        date_pattern = re.compile(r'^[（(].*?年.*?[）)]$')
+        # date_pattern = re.compile(r"^[（(].*?年.*?[）)]$")
 
         # 优先找 class="a0" 的 p 标签 (根据你提供的 CSS，a0 是居中且常用于日期)
-        for p in soup.find_all('p', class_='a0'):
+        for p in soup.find_all("p", class_="a0"):
             text = p.get_text(strip=True)
             if DATE_PATTERN.match(text):
-                return text.replace('（', '').replace('）', '').replace('(', '').replace(')', '')
+                return (
+                    text.replace("（", "")
+                    .replace("）", "")
+                    .replace("(", "")
+                    .replace(")", "")
+                )
 
         # 如果没找到，扫一遍前 5 个段落
-        for p in soup.find_all('p', limit=5):
+        for p in soup.find_all("p", limit=5):
             text = p.get_text(strip=True)
             if DATE_PATTERN.match(text):
-                return text.replace('（', '').replace('）', '').replace('(', '').replace(')', '')
+                return (
+                    text.replace("（", "")
+                    .replace("）", "")
+                    .replace("(", "")
+                    .replace(")", "")
+                )
 
         return "日期未知"
 
@@ -305,11 +350,11 @@ class MaoEpubLoader:
         在转文本前，从 DOM 树中移除干扰元素。
         """
         # 1. 移除标题标签
-        for header in soup.find_all(['h1', 'h2', 'h3', 'title']):
+        for header in soup.find_all(["h1", "h2", "h3", "title"]):
             header.decompose()
 
         # 2. 移除可能的 CSS 隐藏元素或页码
-        for tag in soup.find_all(class_=['page-number', 'hidden']):
+        for tag in soup.find_all(class_=["page-number", "hidden"]):
             tag.decompose()
 
     def _post_process_content(self, content: str, date: str, title: str) -> str:
@@ -318,7 +363,7 @@ class MaoEpubLoader:
         """
         # 如果正文开头包含了标题，去除之
         if content.startswith(title):
-            content = content[len(title):].lstrip()
+            content = content[len(title) :].lstrip()
 
         # 如果正文开头包含了日期，去除之
         # 注意：这里要小心，别把正文里的日期误删，通常日期在最前面
@@ -327,13 +372,14 @@ class MaoEpubLoader:
             candidates = [date, f"（{date}）", f"({date})"]
             for cand in candidates:
                 if content.startswith(cand):
-                    content = content[len(cand):].lstrip()
+                    content = content[len(cand) :].lstrip()
                     break
 
         return content
 
 
 # ---------------- 调用示例 ----------------
+
 
 def read_epub_chapters_mao_selected(epub_path, excluded_titles=DEFAULT_EXCLUDED_TITLES):
     """
@@ -344,15 +390,15 @@ def read_epub_chapters_mao_selected(epub_path, excluded_titles=DEFAULT_EXCLUDED_
 
 
 if __name__ == "__main__":
-    epub_path = ASSETS_DIR / "毛泽东选集一至七卷.epub"
-    # {'《毛主席教我们当省委书记》', '序', '后记'}
-    if epub_path.exists():
-        chapters = read_epub_chapters_mao_selected(epub_path)
-        print(f"✅ 共提取 {len(chapters)} 章")
+    epub_path_traversable = ASSETS_DIR / "毛泽东选集一至七卷.epub"
+    with as_file(epub_path_traversable) as epub_path:
+        if epub_path.exists():
+            chapters = read_epub_chapters_mao_selected(epub_path)
+            print(f"✅ 共提取 {len(chapters)} 章")
 
-        if chapters:
-            sample = chapters[10] if len(chapters) > 10 else chapters[0]
-            print(f"标题: {sample['title']}")
-            print(f"日期: {sample['date']}")
-            print(f"层级: {sample['volume']} / {sample['period']}")
-            print(f"内容预览: {sample['content'][:80]}...")
+            if chapters:
+                sample = chapters[10] if len(chapters) > 10 else chapters[0]
+                print(f"标题: {sample['title']}")
+                print(f"日期: {sample['date']}")
+                print(f"层级: {sample['volume']} / {sample['period']}")
+                print(f"内容预览: {sample['content'][:80]}...")

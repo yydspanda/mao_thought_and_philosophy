@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    // --- 核心必备 ---
+    "ms-python.python", // 必装：官方 Python 插件，包含 Pylance 智能提示
+    "charliermarsh.ruff", // 强烈推荐：现代 Python 的瑞士军刀，集成了超快速的 Linter、Formatter 和 import 排序器，相当于 Python 世界的 ESLint+Prettier+import-sorter 合体！
+
+    // --- 效率提升 ---
+    "ms-python.debugpy", // 必装：官方调试器
+    "gitlens.eamodio", // 推荐：增强 Git 功能
+    "mikestead.dotenv" // 推荐：如果你使用 .env 文件
+  ]
+}

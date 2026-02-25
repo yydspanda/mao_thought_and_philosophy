@@ -2,9 +2,7 @@
 name = "mao-thought-and-philosophy"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "yydsp",email = "yydspei@gmail.com"}
-]
+authors = [{ name = "yydsp", email = "yydspei@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -18,12 +16,66 @@ dependencies = [
     "jinja2 (>=3.1.6,<4.0.0)",
     "json-repair (>=0.54.2,<0.55.0)",
     "mypy (>=1.19.1,<2.0.0)",
-    "ruff (>=0.14.13,<0.15.0)"
+    "ruff (>=0.14.13,<0.15.0)",
 ]
 
 [tool.poetry]
-packages = [{include = "mao_thought_and_philosophy", from = "src"}]
+packages = [{ include = "mao_thought_and_philosophy", from = "src" }]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []
+
+[tool.mypy]
+# --- 最弱的入门级 Mypy 配置 ---
+
+# 1. 忽略所有关于缺少类型存根的导入错误 (最重要的设置)
+# 这会解决所有第三方库（如 pandas, requests 等）的报错。
+ignore_missing_imports = true
+
+# 2. 不严格检查 Optional 类型 (关闭 None 值检查)
+# 这会解决你图片中看到的 "Object of type 'None' is not subscriptable" 错误。
+# 警告：这会隐藏真实的、可能在运行时发生的 None 值错误。
+strict_optional = true
+
+# 3. 允许定义没有任何类型注解的函数 (默认就是 False，但写出来更清晰)
+disallow_untyped_defs = false
+
+# 4. 不检查那些没有注解的函数内部 (默认就是 False)
+check_untyped_defs = false
+
+# 5. 如果函数的返回值被推断为 Any 类型，不发出警告
+warn_return_any = false
+
+# 6. 不警告无法访问到的代码
+warn_unreachable = false
+# 1. 全局配置：解决路径冲突
+# Mypy 的 exclude 需要使用正则表达式。
+# 为了匹配 'nas/config.py' 或 'nas\config.py'，并确保精确匹配，推荐使用下面的写法。
+exclude = '(?x)(^nas/config\.py$)'
+
+# # 2. 局部覆盖配置：忽略指定库的类型检查
+# [[tool.mypy.overrides]]
+# # 将所有需要忽略的模块（带通配符）放入这个列表
+# module = [
+#     "kombu.*",
+#     "xmind.*",
+#     "mammoth.*",
+#     "pymilvus.*",
+#     "win32com.*",
+#     "langchain.*",
+#     "vanna.*",
+#     "volcengine.*",
+#     "cnocr.*",
+#     "fitz.*",
+# ]
+# # 这条规则将应用到上面列表中的所有模块
+# ignore_missing_imports = true

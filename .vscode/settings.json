@@ -22,13 +22,6 @@
   "editor.formatOnSave": true,
 
   // ================================================================
-  // Python 解释器设置
-  // ================================================================
-
-  // 告诉 VS Code Python 插件去使用我们 .venv 目录下的解释器
-  // 虽然插件通常能自动发现，但明确指定是最佳实践
-  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-  // ================================================================
   // 通用编辑器和文件设置
   // ================================================================
   "editor.tabSize": 4, // Python 社区规范，使用 4 个空格
@@ -39,5 +32,47 @@
     "**/.pytest_cache": true,
     "**/.ruff_cache": true
   },
-  "python.analysis.extraPaths": ["./src"]
+  // ================================================================
+  // Python 解释器设置
+  // ================================================================
+  // 告诉 VS Code Python 插件去使用我们 .venv 目录下的解释器
+  // 虽然插件通常能自动发现，但明确指定是最佳实践
+  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+  "python.analysis.extraPaths": ["./src", "${workspaceFolder}"],
+  "terminal.integrated.env.windows": { "PYTHONPATH": "${workspaceFolder}" },
+  "python.analysis.typeCheckingMode": "standard",
+  "python.analysis.autoImportCompletions": true,
+  "python-envs.defaultEnvManager": "ms-python.python:venv",
+  "python-envs.pythonProjects": [],
+  "python.analysis.packageIndexDepths": [
+    {
+      "name": "llama_index",
+      "depth": 6
+    },
+    {
+      "name": "langchain",
+      "depth": 6
+    },
+    {
+      "name": "scipy",
+      "depth": 2
+    },
+    {
+      "name": "django",
+      "depth": 2
+    },
+    {
+      "name": "flask",
+      "depth": 2
+    },
+    {
+      "name": "fastapi",
+      "depth": 2
+    },
+    {
+      "name": "cuda",
+      "depth": 3,
+      "includeAllSymbols": true
+    }
+  ]
 }

@@ -9,7 +9,7 @@
         // 选项1: 管理角色
         "--file 毛泽东选集一至七卷.epub --role management",
         // 选项2: 牛马角色
-        "--file 毛泽东选集一至七卷.epub --role 牛马",
+        "--file 毛泽东选集一至七卷.epub --role developer",
         // 选项3: 不带参数
         ""
       ],

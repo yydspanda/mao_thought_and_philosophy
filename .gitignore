@@ -164,6 +164,7 @@ uv.lock
 .langgraph_api/
 
 # Project specific
-output/
 .opencode/
 .ruff_cache/
+.claude/
+.gemini/
